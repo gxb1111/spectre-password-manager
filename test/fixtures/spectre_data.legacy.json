@@ -1,0 +1,47 @@
+{
+  "favorites": [
+    { "site": "普通话", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "AI安全", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "补天漏洞", "template": "maximum", "category": "默认", "user": "苏星豪" },
+    { "site": "程序员客栈", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "gitee", "template": "medium", "category": "默认", "user": "苏星豪" },
+    { "site": "攻防世界", "template": "medium", "category": "默认", "user": "苏星豪" },
+    { "site": "hackbyte", "template": "medium", "category": "默认", "user": "苏星豪" },
+    { "site": "bugku", "template": "medium", "category": "默认", "user": "苏星豪" },
+    { "site": "CTF", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "U+", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "acbug", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "远程", "template": "basic", "category": "默认", "user": "苏星豪" },
+    { "site": "西北民族大学", "template": "medium", "category": "默认", "user": "苏星豪" },
+    { "site": "微软", "template": "pin", "category": "默认", "user": "苏星豪" },
+    { "site": "安卓", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "1", "template": "long", "category": "1", "user": "1" }
+  ],
+  "categories": {
+    "默认": [
+      { "site": "普通话", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "AI安全", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "补天漏洞", "template": "maximum", "category": "默认", "user": "苏星豪" },
+      { "site": "程序员客栈", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "gitee", "template": "medium", "category": "默认", "user": "苏星豪" },
+      { "site": "攻防世界", "template": "medium", "category": "默认", "user": "苏星豪" },
+      { "site": "hackbyte", "template": "medium", "category": "默认", "user": "苏星豪" },
+      { "site": "bugku", "template": "medium", "category": "默认", "user": "苏星豪" },
+      { "site": "CTF", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "U+", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "acbug", "template": "long", "category": "默认", "user": "苏星豪" },
+      { "site": "远程", "template": "basic", "category": "默认", "user": "苏星豪" },
+      { "site": "西北民族大学", "template": "medium", "category": "默认", "user": "苏星豪" },
+      { "site": "微软", "template": "pin", "category": "默认", "user": "苏星豪" },
+      { "site": "安卓", "template": "long", "category": "默认", "user": "苏星豪" }
+    ]
+  },
+  "recent": [
+    { "site": "普通话", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "AI安全", "template": "long", "category": "默认", "user": "苏星豪" },
+    { "site": "补天漏洞", "template": "maximum", "category": "默认", "user": "苏星豪" },
+    { "site": "skyeye", "template": "maximum", "category": "默认", "user": "苏星豪" },
+    { "site": "补天", "template": "maximum", "category": "默认", "user": "苏星豪" },
+    { "site": "程序员客栈", "template": "long", "category": "默认", "user": "苏星豪" }
+  ]
+}

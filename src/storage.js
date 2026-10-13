@@ -53,6 +53,11 @@ const MULTI_PART_SUFFIX = new Set([
 /**
  * 从 URL / 主机名 / 用户手输里提取站点名。
  * 这是**唯一**决定密码的站点名来源，所以它必须稳定、可复现、可手改。
+ *
+ * 注意：**保留大小写**。Spectre 的站点名是区分大小写的输入 ——
+ * `CTF` 和 `ctf` 推导出来是两套完全不同的密码，旧版 WebUI 就是把用户
+ * 手输的原样喂给 spectre 二进制。只有 URL 里的 host 天生小写（URL 规范使然）。
+ * 「是不是同一个站点」这类判断请用 siteLookupKey()，绝不要在这里折叠大小写。
  */
 function normalizeSite(input) {
   if (!input) return '';
@@ -71,11 +76,22 @@ function normalizeSite(input) {
   if (s.indexOf('/') !== -1) s = s.split('/')[0];
   if (s.indexOf('@') !== -1) s = s.split('@').pop();
   s = s.replace(/:\d+$/, '');          // 去端口
-  return stripWww(s);
+  return stripWww(s, true);
 }
 
-function stripWww(host) {
-  return String(host || '').trim().toLowerCase().replace(/\.+$/, '').replace(/^www\./, '');
+/** 去掉尾部点与开头的 www.；keepCase 时不动大小写（手输的站点名要走这里）。 */
+function stripWww(host, keepCase) {
+  let h = String(host || '').trim();
+  if (!keepCase) h = h.toLowerCase();
+  return h.replace(/\.+$/, '').replace(/^www\./i, '');
+}
+
+/**
+ * 站点名的**查找键**：归一化后再折叠大小写。
+ * 只用来回答「这是不是同一个站点」，永远不参与密码推导。
+ */
+function siteLookupKey(input) {
+  return normalizeSite(input).toLowerCase();
 }
 
 /** 把主机名折叠成 eTLD+1（尽力而为）。 */
@@ -94,10 +110,10 @@ function baseDomain(host) {
 // ---------------------------------------------------------------- 状态操作（纯函数）
 
 function findBySite(list, site) {
-  const key = normalizeSite(site);
+  const key = siteLookupKey(site);
   if (!key) return -1;
   for (let i = 0; i < list.length; i++) {
-    if (normalizeSite(list[i].site) === key) return i;
+    if (siteLookupKey(list[i].site) === key) return i;
   }
   return -1;
 }
@@ -175,8 +191,9 @@ function pushRecent(state, entry) {
   const next = cloneState(state);
   const site = normalizeSite(entry.site);
   if (!site) return next;
+  const key = siteLookupKey(site);
   next.recent = (next.recent || []).filter(function (r) {
-    return normalizeSite(r.site) !== site;
+    return siteLookupKey(r.site) !== key;
   });
   next.recent.unshift({
     site: site,
@@ -235,7 +252,8 @@ function migrate(raw) {
       if (!r || !r.site) return;
       const site = normalizeSite(r.site);
       if (!site) return;
-      if (out.recent.some(function (x) { return x.site === site; })) return;
+      const key = siteLookupKey(site);
+      if (out.recent.some(function (x) { return siteLookupKey(x.site) === key; })) return;
       out.recent.push({
         site: site,
         userName: r.userName || '',
@@ -247,6 +265,141 @@ function migrate(raw) {
     if (out.recent.length > RECENT_LIMIT) out.recent.length = RECENT_LIMIT;
   }
   return out;
+}
+
+// ---------------------------------------------------------------- 导入 / 迁移
+
+/** 插件已知的密码模板（personal 不在其中，见 README）。 */
+const KNOWN_TYPES = ['maximum', 'long', 'medium', 'short', 'basic', 'pin', 'name', 'phrase'];
+
+/** 把一条外部记录折成内部收藏记录；站点名拿不到就返回 null。 */
+function coerceEntry(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const site = normalizeSite(raw.site || raw.siteName || raw.name || '');
+  if (!site) return null;
+  // 旧版 WebUI 用 template / user，本插件用 type / userName
+  let type = String(raw.type || raw.template || 'long').trim().toLowerCase();
+  if (KNOWN_TYPES.indexOf(type) === -1) type = 'long';
+  const counter = Math.max(1, parseInt(raw.counter, 10) || 1);
+  let algorithm = parseInt(raw.algorithm, 10);
+  if (!(algorithm >= 0 && algorithm <= 3)) algorithm = 3;
+  const category = String(raw.category || raw.categoryName || '').trim() || UNCATEGORIZED;
+  return {
+    site: site,
+    userName: String(raw.userName || raw.user || '').trim(),
+    type: type,
+    counter: counter,
+    algorithm: algorithm,
+    category: category,
+  };
+}
+
+/**
+ * 解析导入载荷，两种格式都吃：
+ *   A) 本插件「导出 JSON」：{ favorites:[{site,userName,type,counter,algorithm,category}], categories:[…] }
+ *   B) 旧版桌面 WebUI 的 spectre_data.json：
+ *      { favorites:[{site,template,category,user}], categories:{ "默认":[…] }, recent:[…] }
+ * 识别旧版的两个特征：categories 是**对象**、条目上用 template/user 而不是 type/userName。
+ *
+ * 旧版 server.py 调 spectre 时没带 -a，所以那批数据一律是 v3、counter 恒为 1；
+ * 但如果有条目显式带了 algorithm/counter，这里也照收。
+ */
+function parseImport(payload) {
+  let data = payload;
+  if (typeof data === 'string') data = JSON.parse(data);
+  if (Array.isArray(data)) data = { favorites: data };
+  if (!data || typeof data !== 'object') throw new Error('导入内容不是 JSON 对象');
+
+  const legacyCats = (data.categories && !Array.isArray(data.categories) && typeof data.categories === 'object')
+    ? Object.keys(data.categories) : null;
+  const legacy = !!(legacyCats || (Array.isArray(data.favorites) && data.favorites.some(function (f) {
+    return f && (f.template !== undefined || f.user !== undefined);
+  })));
+
+  const entries = (Array.isArray(data.favorites) ? data.favorites : []).map(coerceEntry).filter(Boolean);
+
+  const categories = [];
+  const pushCat = function (c) {
+    const s = String(c == null ? '' : c).trim();
+    if (s && categories.indexOf(s) === -1) categories.push(s);
+  };
+  (Array.isArray(data.categories) ? data.categories : (legacyCats || [])).forEach(pushCat);
+  entries.forEach(function (e) { pushCat(e.category); });
+
+  const recent = (Array.isArray(data.recent) ? data.recent : []).map(function (r) {
+    const e = coerceEntry(r);
+    return e ? { site: e.site, userName: e.userName, type: e.type, at: parseInt(r.at, 10) || 0 } : null;
+  }).filter(Boolean);
+
+  return {
+    source: legacy ? 'legacy-webui' : 'spectre-plugin',
+    entries: entries,
+    categories: categories,
+    recent: recent,
+    settings: (data.settings && typeof data.settings === 'object') ? data.settings : null,
+  };
+}
+
+/**
+ * 把导入载荷并进现有状态，返回 `{ state, stats }`。
+ * 同站点以**导入的**为准（这是一次显式导入），其余已有收藏原样保留；
+ * 站点名原样保留大小写，只按 siteLookupKey 判重。
+ */
+function importMetadata(state, payload) {
+  const parsed = parseImport(payload);
+  let next = cloneState(state);
+
+  parsed.categories.forEach(function (c) {
+    if (next.categories.indexOf(c) === -1) next.categories.push(c);
+  });
+
+  let added = 0, updated = 0;
+  parsed.entries.forEach(function (e) {
+    const existed = findBySite(next.favorites, e.site) !== -1;
+    next = addFavorite(next, e);
+    if (existed) updated++; else added++;
+  });
+
+  // 旧数据里没有「记住姓名」时，顺手从导入条目里取一个（多数决），省得用户再打一遍
+  if (!next.settings.userName) {
+    const tally = {};
+    parsed.entries.forEach(function (e) {
+      if (e.userName) tally[e.userName] = (tally[e.userName] || 0) + 1;
+    });
+    let best = '', bestN = 0;
+    Object.keys(tally).forEach(function (k) {
+      if (tally[k] > bestN) { best = k; bestN = tally[k]; }
+    });
+    if (best) next.settings.userName = best;
+  }
+
+  if (parsed.settings) {
+    const s = parsed.settings;
+    if (KNOWN_TYPES.indexOf(String(s.defaultType || '')) !== -1) next.settings.defaultType = s.defaultType;
+    const a = parseInt(s.algorithm, 10);
+    if (a >= 0 && a <= 3) next.settings.algorithm = a;
+    if (typeof s.userName === 'string' && s.userName.trim()) next.settings.userName = s.userName.trim();
+  }
+
+  const beforeRecent = next.recent.map(function (r) { return siteLookupKey(r.site); });
+  let recentAdded = 0;
+  // 输入是「新的在前」，pushRecent 是 unshift，所以倒着喂才能把顺序摆正
+  parsed.recent.slice().reverse().forEach(function (r) {
+    if (beforeRecent.indexOf(siteLookupKey(r.site)) === -1) recentAdded++;
+    next = pushRecent(next, r);
+  });
+
+  return {
+    state: next,
+    stats: {
+      source: parsed.source,
+      total: parsed.entries.length,
+      added: added,
+      updated: updated,
+      categories: parsed.categories.length,
+      recentAdded: recentAdded,
+    },
+  };
 }
 
 // ---------------------------------------------------------------- 后端（chrome.storage / 内存）
@@ -325,6 +478,7 @@ export { RECENT_LIMIT };
 export { UNCATEGORIZED };
 export { emptyState };
 export { normalizeSite };
+export { siteLookupKey };
 export { baseDomain };
 export { findBySite };
 export { findFavorite };
@@ -337,6 +491,9 @@ export { groupByCategory };
 export { pushRecent };
 export { clearRecent };
 export { migrate };
+export { KNOWN_TYPES };
+export { parseImport };
+export { importMetadata };
 export { memoryBackend };
 export { chromeBackend };
 export { createStore };

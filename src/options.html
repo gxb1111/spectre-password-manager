@@ -75,17 +75,39 @@
     </section>
 
     <section class="card">
+      <h2>导入 / 迁移</h2>
+      <p class="note">
+        两种格式都认：本插件的<b>导出 JSON</b>，以及旧版桌面 WebUI 的
+        <code>spectre_data.json</code>（<code>{ "favorites":[{ "site","template","category","user" }] }</code>）。
+      </p>
+      <div class="imp-row">
+        <input id="op-import-file" type="file" accept=".json,application/json">
+        <button id="op-import-clear" class="ghost small">清空</button>
+      </div>
+      <textarea id="op-import-text" rows="6" spellcheck="false"
+                placeholder="也可以直接把 JSON 粘到这里"></textarea>
+      <div class="row-end">
+        <button id="op-import-run" class="primary small">导入</button>
+      </div>
+      <p class="note">
+        站点名<b>原样保留</b>：Spectre 区分大小写，<code>CTF</code> 和 <code>ctf</code> 推出来是两套密码。
+        同一站点重复导入会覆盖而不是产生副本；旧版数据的 counter 一律按 1、算法按 v3 收
+        （旧版 server.py 调二进制时没带 <code>-a</code>）。
+      </p>
+    </section>
+
+    <section class="card">
       <h2>验证</h2>
       <p class="note">
         对照官方测试向量的自检可以直接在本机跑：
       </p>
-      <pre class="code">node test/verify_vectors.js    # 与官方 CLI 二进制对照
-node tests/run_vectors.js      # 官方 XML 测试套件
+      <pre class="code">node test/verify_vectors.js    # 与官方 CLI 二进制对照（68/68）
+node test/vectors.test.js      # 官方 XML 测试套件
 node test/storage.test.js      # 状态层单测</pre>
       <p class="note">
         经典自检样例：姓名 <code>Robert Lee Mitchell</code>、主密钥
-        <code>banana colored duckling</code>、站点 <code>masterpasswordapp.com</code>、
-        v0、long → <code>Feji5@ReduWosh</code>；同输入换 v3 → <code>PozoLalv0_Yelo</code>。
+        <code>banana colored duckling</code>、站点 <code>spectre.app</code>、
+        v3、long → <code>ReqoCenuXonu1?</code>；同输入换 v0 → <code>NejoKecuMocx6@</code>。
       </p>
     </section>
 

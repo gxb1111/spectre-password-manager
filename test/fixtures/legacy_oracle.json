@@ -1,0 +1,24 @@
+{
+  "note": "官方 CLI 二进制（/home/gxb/spectre-webui/spectre）对下列站点的输出，用于验证迁移保真度。生成脚本 D:\\desktop\\1\\dsh\\legacy_fidelity_oracle.sh",
+  "userName": "苏星豪",
+  "userSecret": "fidelity-probe-secret",
+  "algorithm": 3,
+  "counter": 1,
+  "cases": [
+    { "site": "普通话",       "type": "long",    "password": "YapfDuwcYoli9~" },
+    { "site": "AI安全",       "type": "long",    "password": "RigfReku7?Bomt" },
+    { "site": "补天漏洞",     "type": "maximum", "password": "Bjp6JjlLtFG(a#DMc85?" },
+    { "site": "程序员客栈",   "type": "long",    "password": "Fotu6;CugeJidi" },
+    { "site": "gitee",        "type": "medium",  "password": "QulDac6-" },
+    { "site": "攻防世界",     "type": "medium",  "password": "MazKir2," },
+    { "site": "hackbyte",     "type": "medium",  "password": "Fom1%Lic" },
+    { "site": "bugku",        "type": "medium",  "password": "Zeq9?Xal" },
+    { "site": "CTF",          "type": "long",    "password": "JirgRixhGuha4$" },
+    { "site": "U+",           "type": "long",    "password": "VozoZufo4,Dilu" },
+    { "site": "acbug",        "type": "long",    "password": "KojnKuvaLoks6-" },
+    { "site": "远程",         "type": "basic",   "password": "tY91qqS0" },
+    { "site": "西北民族大学", "type": "medium",  "password": "QeqFex1$" },
+    { "site": "微软",         "type": "pin",     "password": "8618" },
+    { "site": "安卓",         "type": "long",    "password": "ZufiYeku6.Tecf" }
+  ]
+}

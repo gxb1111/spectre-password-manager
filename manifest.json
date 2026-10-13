@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Spectre 密码管理器",
   "short_name": "Spectre",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "基于 Spectre / Master Password 算法的确定性密码管理器：主密钥永不落盘，密码随站点实时推导。",
   "default_locale": "zh_CN",
   "minimum_chrome_version": "102",

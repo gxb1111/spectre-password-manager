@@ -173,6 +173,47 @@ function bind() {
     setStatus('已导出元数据', 'ok');
   });
 
+  $('op-import-file').addEventListener('change', async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      $('op-import-text').value = await file.text();
+      setStatus('已读入 ' + file.name + '，点「导入」生效', 'ok');
+    } catch (err) {
+      setStatus('读文件失败：' + err.message, 'err');
+    }
+  });
+
+  $('op-import-clear').addEventListener('click', () => {
+    $('op-import-text').value = '';
+    $('op-import-file').value = '';
+    setStatus('');
+  });
+
+  $('op-import-run').addEventListener('click', async () => {
+    const raw = $('op-import-text').value.trim();
+    if (!raw) { setStatus('先在文本框里贴 JSON，或选一个文件', 'err'); return; }
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (err) {
+      setStatus('不是合法 JSON：' + err.message, 'err');
+      return;
+    }
+    try {
+      const res = Store.importMetadata(state, payload);
+      const s = res.stats;
+      const src = s.source === 'legacy-webui' ? '旧版 WebUI' : '插件导出';
+      await persist(res.state, '');
+      $('op-import-text').value = '';
+      $('op-import-file').value = '';
+      setStatus('（' + src + '）新增 ' + s.added + ' 项、覆盖 ' + s.updated +
+                ' 项，分类 ' + s.categories + ' 个', 'ok');
+    } catch (err) {
+      setStatus('导入失败：' + err.message, 'err');
+    }
+  });
+
   $('op-reset').addEventListener('click', async () => {
     if (!confirm('确定清空全部数据？收藏与分类都会删除，且无法恢复。\n（主密钥不在插件里，不受影响）')) return;
     await persist(Store.emptyState(), '已清空全部数据');

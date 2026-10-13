@@ -27,10 +27,18 @@ async function testAsync(name, fn) {
 }
 
 console.log('\n== normalizeSite ==');
-test('去协议、去 www、降大小写、去端口', () => {
+test('URL 走 host（host 天生小写）、去 www、去端口', () => {
   assert.strictEqual(S.normalizeSite('https://www.GitHub.com:443/login?x=1'), 'github.com');
   assert.strictEqual(S.normalizeSite('github.com'), 'github.com');
-  assert.strictEqual(S.normalizeSite('  GitHub.com/  '), 'github.com');
+  assert.strictEqual(S.normalizeSite('https://GitHub.com/'), 'github.com');
+});
+test('手输的站点名保留大小写', () => {
+  // Spectre 的站点名区分大小写：CTF / ctf 是两套密码，绝不能在这里折叠
+  assert.strictEqual(S.normalizeSite('CTF'), 'CTF');
+  assert.strictEqual(S.normalizeSite('AI安全'), 'AI安全');
+  assert.strictEqual(S.normalizeSite('U+'), 'U+');
+  assert.strictEqual(S.normalizeSite('  GitHub.com/  '), 'GitHub.com');
+  assert.strictEqual(S.normalizeSite('CTF.'), 'CTF');
 });
 test('裸域名 / 带路径 / 带用户信息都能吃', () => {
   assert.strictEqual(S.normalizeSite('mail.google.com/inbox'), 'mail.google.com');
@@ -41,6 +49,11 @@ test('空值安全', () => {
   assert.strictEqual(S.normalizeSite(null), '');
   assert.strictEqual(S.normalizeSite(undefined), '');
   assert.strictEqual(S.normalizeSite('   '), '');
+});
+test('siteLookupKey 折叠大小写，只管判重', () => {
+  assert.strictEqual(S.siteLookupKey('CTF'), 'ctf');
+  assert.strictEqual(S.siteLookupKey('https://WWW.GitHub.com/x'), 'github.com');
+  assert.strictEqual(S.siteLookupKey('AI安全'), 'ai安全');
 });
 
 console.log('\n== baseDomain ==');
@@ -195,6 +208,89 @@ test('settings 与默认值合并', () => {
   assert.strictEqual(st.settings.defaultType, 'maximum');
   assert.strictEqual(st.settings.algorithm, 3);
   assert.strictEqual(st.settings.autoFill, true);
+});
+
+console.log('\n== 导入 / 迁移 ==');
+test('旧版 webui 格式：template/user/categories 对象都认', () => {
+  const legacy = {
+    favorites: [
+      { site: 'AI安全', template: 'long', category: '默认', user: '苏星豪' },
+      { site: '补天漏洞', template: 'maximum', category: '默认', user: '苏星豪' },
+      { site: '微软', template: 'pin', category: '默认', user: '苏星豪' },
+    ],
+    categories: { '默认': [] },
+    recent: [{ site: 'skyeye', template: 'maximum' }],
+  };
+  const r = S.importMetadata(S.emptyState(), legacy);
+  assert.strictEqual(r.stats.source, 'legacy-webui');
+  assert.strictEqual(r.stats.total, 3);
+  assert.strictEqual(r.stats.added, 3);
+  assert.strictEqual(r.stats.updated, 0);
+  assert.strictEqual(r.state.favorites.length, 3);
+  // 大小写原样保留
+  assert.strictEqual(r.state.favorites[0].site, 'AI安全');
+  // template → type，user → userName
+  assert.strictEqual(r.state.favorites[0].type, 'long');
+  assert.strictEqual(r.state.favorites[1].type, 'maximum');
+  assert.strictEqual(r.state.favorites[2].type, 'pin');
+  assert.strictEqual(r.state.favorites[0].userName, '苏星豪');
+  // 旧版没带 -a ⇒ v3；counter 恒为 1
+  assert.strictEqual(r.state.favorites[0].algorithm, 3);
+  assert.strictEqual(r.state.favorites[0].counter, 1);
+  assert.ok(r.state.categories.indexOf('默认') !== -1);
+  // 没设过姓名时顺手补上
+  assert.strictEqual(r.state.settings.userName, '苏星豪');
+  assert.strictEqual(r.state.recent[0].site, 'skyeye');
+});
+
+test('插件导出格式识别为 spectre-plugin，settings 被合并', () => {
+  const r = S.importMetadata(S.emptyState(), {
+    exportedAt: '2026-01-01T00:00:00Z',
+    favorites: [{ site: 'gitee', userName: 'u', type: 'medium', counter: 2, algorithm: 2, category: '码' }],
+    categories: ['码'],
+    settings: { defaultType: 'pin', algorithm: 1, userName: '张三' },
+  });
+  assert.strictEqual(r.stats.source, 'spectre-plugin');
+  assert.strictEqual(r.state.favorites[0].counter, 2);
+  assert.strictEqual(r.state.favorites[0].algorithm, 2);
+  assert.strictEqual(r.state.settings.defaultType, 'pin');
+  assert.strictEqual(r.state.settings.algorithm, 1);
+  assert.strictEqual(r.state.settings.userName, '张三');
+});
+
+test('重复导入不产生副本，同站点以导入的为准', () => {
+  const legacy = { favorites: [{ site: 'CTF', template: 'long', user: 'a' }] };
+  const once = S.importMetadata(S.emptyState(), legacy).state;
+  const twice = S.importMetadata(once, { favorites: [{ site: 'CTF', template: 'maximum', user: 'b' }] });
+  assert.strictEqual(twice.state.favorites.length, 1);
+  assert.strictEqual(twice.stats.updated, 1);
+  assert.strictEqual(twice.state.favorites[0].type, 'maximum');
+  assert.strictEqual(twice.state.favorites[0].userName, 'b');
+});
+
+test('大小写不同的站点视为同一个（判重不分大小写）', () => {
+  const a = S.importMetadata(S.emptyState(), { favorites: [{ site: 'ctf', template: 'long' }] }).state;
+  const b = S.importMetadata(a, { favorites: [{ site: 'CTF', template: 'pin' }] }).state;
+  assert.strictEqual(b.favorites.length, 1);
+  assert.strictEqual(b.favorites[0].site, 'CTF');   // 后导入的写法胜出
+  assert.strictEqual(b.favorites[0].type, 'pin');
+});
+
+test('未知模板回退 long，坏记录跳过，非法 JSON 抛错', () => {
+  const r = S.importMetadata(S.emptyState(), {
+    favorites: [{ site: 'x.com', template: 'personal' }, { nonsense: 1 }, null, { site: '' }],
+  });
+  assert.strictEqual(r.stats.total, 1);
+  assert.strictEqual(r.state.favorites[0].type, 'long');
+  assert.throws(() => S.importMetadata(S.emptyState(), '{ 不是 json'), SyntaxError);
+  assert.throws(() => S.importMetadata(S.emptyState(), '42'), /JSON/);
+});
+
+test('字符串载荷与裸数组载荷都能吃', () => {
+  const viaString = S.importMetadata(S.emptyState(), '{"favorites":[{"site":"a.com"}]}');
+  assert.strictEqual(viaString.stats.total, 1);
+  const viaArray = S.importMetadata(S.emptyState(), [{ site: 'b.com', template: 'medium' }]);
+  assert.strictEqual(viaArray.state.favorites[0].type, 'medium');
 });
 
 console.log('\n== 存储后端 ==');

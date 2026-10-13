@@ -97,8 +97,10 @@ console.log('== JS 语法 ==');
   'tools\\set_extension_key.js',
   'tools\\lint.js',
   'test\\storage.test.js',
+  'test\\legacy_fidelity.test.js',
   'test\\verify_vectors.js',
   'test\\vectors.test.js',
+  'test\\audit_xml_vs_cli.js',
   'test\\browser_e2e.js',
 ].forEach(check);
 

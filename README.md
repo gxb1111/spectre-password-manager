@@ -99,6 +99,17 @@ node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需 WSL 
 
 浏览器端到端那条会用 `--load-extension` 起一个真的 headless Chrome，验证插件被加载、popup 页面渲染、在扩展上下文里跑完 68 条向量、并且真的走一遍 worker 的 `derive → generate`。
 
+同一套断言可以直接换浏览器跑（脚本内不依赖 Chrome 专有行为）：
+
+```powershell
+# 在 Edge 上跑（端口可配，好和 Chrome 并行）
+$env:SPECTRE_CHROME = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+$env:SPECTRE_PORT = "9344"
+node test/browser_e2e.js
+```
+
+`SPECTRE_CHROME` 指到哪个浏览器二进制就跑哪个；`SPECTRE_PORT` 用来避开默认的 9333。
+
 ### 踩过的两个坑（留档，免得别人再撞）
 
 **（1）`algorithm` 必须从 case 里解析出来。** 官方 XML 把算法版本写在 case 上（`<algorithm>0</algorithm>`），靠 `parent=` 逐级继承。如果解析时只看 `resultType` 不看 `algorithm`，所有用例都会按默认的 v3 计算——v0/v1/v2 的用例会大面积失败，看上去就像「XML 里有几十条坏向量」，其实只是测试脚本自己漏了一个字段。本仓库一度得出过这个错误结论，后来用 `test/audit_xml_vs_cli.js` 拿官方 CLI 逐条复判才纠正过来：**239 条里 215 条与官方 CLI 逐字一致，剩下 24 条全是 `type_personal`**（下一节）。
@@ -124,6 +135,16 @@ node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需 WSL 
 3. 点「加载已解压的扩展程序」，选择仓库根目录（有 `manifest.json` 的那层）；
 4. 工具栏出现图标即可。点图标 → 输入全名与主密钥 → 生成密码。
 
+### Edge 也一样能装
+
+Edge 是 Chromium 内核，这份 Manifest V3 扩展原样可用，本仓库的端到端测试在 Edge 上跑过同一套断言（`Edge 155.0.4283.45`，12/12 通过）。操作只有一处不同：
+
+1. Edge 地址栏打开 `edge://extensions/`（不是 `chrome://`）；
+2. 左下角打开「开发人员模式」；
+3. 点「加载解压缩的扩展」，选仓库根目录。
+
+Edge 用的是同一套 `chrome.*` 扩展 API，`chrome.storage` / `chrome.scripting` / Web Worker 行为一致，无需改代码。扩展 ID 由 `manifest.key` 决定，所以**在 Edge 里装出来的 ID 和在 Chrome 里完全一样**，配置与数据能互通。
+
 装完建议先在「扩展设置」页核对一遍。用全名 `Robert Lee Mitchell`、主密钥 `banana colored duckling`、站点 `spectre.app`，那么：
 
 | 算法版本 | 类型 | 期望结果 |
@@ -137,6 +158,36 @@ node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需 WSL 
 
 > 别拿 `PozoLalv0_Yelo` 当基准。那是官方 README 里的示例占位值，本机官方 CLI 二进制的 4 个版本 × 8 种类型全都复现不出它——它不是任何真实输入组合的输出，所以核对时以官方二进制复算出来的上表为准。
 
+
+## 从旧版 WebUI 迁移收藏
+
+设置页有「导入 / 迁移」区，两种格式都认：
+
+| 格式 | 长相 |
+|---|---|
+| 旧版桌面 WebUI 的 `spectre_data.json` | `{ "favorites":[{ "site","template","category","user" }] }` |
+| 本插件的「导出 JSON」 | `{ "favorites":[{ "site","userName","type","counter","algorithm","category" }] }` |
+
+选文件或直接把 JSON 粘进文本框，点「导入」。映射规则：
+
+- `template → type`、`user → userName`、`category` 原样
+- 旧版 `server.py` 调 spectre 二进制时**没带 `-a`**，所以那批数据一律按 **v3**、counter 按 **1** 收
+- 旧版 `categories` 是对象（`{ "默认": [...] }`），也认
+- 未设过姓名时，顺手从导入条目里按众数补一个，省得再打一遍
+- 同站点重复导入是**覆盖**不是副本；判重不分大小写，但**存下来的站点名保留原样**
+
+### 站点名区分大小写，这条不能马虎
+
+Spectre 的站点名是**区分大小写**的输入：`CTF` 和 `ctf` 推出来是两套完全不同的密码。
+旧版 WebUI 就是把用户手输的原样喂给二进制的，所以迁移时**一个字都不能改**。
+
+`src/storage.js` 因此分成了两个函数：
+
+- `normalizeSite()` —— 决定密码的那个站点名，**保留大小写**（URL 里的 host 天生小写，那是 URL 规范的事）
+- `siteLookupKey()` —— 只在「这是不是同一个站点」这类判重里用，折叠大小写
+
+`test/legacy_fidelity.test.js` 专门盯这条：拿官方 CLI 二进制对 15 个真实站点跑出密码当 oracle，
+再让插件推一遍逐步比对。其中 `AI安全` / `CTF` / `U+` 三个一旦被小写化就会立刻红。
 
 ## 使用
 
@@ -173,17 +224,21 @@ src/
   spectre.js            算法核心：零依赖的 SHA-256 / HMAC-SHA256 / PBKDF2 / scrypt + v0–v3
   worker.js             Web Worker：跑 scrypt，避免卡住 popup 的 UI
   popup.html/.css/.js   主界面（解锁、生成、收藏、最近）
-  options.html/.css/.js 设置页（默认模板、用户名、算法版本、数据导出/清空）
+  options.html/.css/.js 设置页（默认模板、用户名、算法版本、导入/导出、清空）
   background.js         service worker（右键菜单、快捷键、注入填写）
-  storage.js            状态层（纯函数 + chrome.storage 后端 + 内存后端）
+  storage.js            状态层（纯函数 + chrome.storage 后端 + 内存后端 + 旧版迁移）
 test/
   verify_vectors.js     68 条官方二进制向量
   vectors.test.js       官方 XML 套件（215 结果 + 240 keyID）
   storage.test.js       状态层单测
-  browser_e2e.js        真 Chrome 端到端
+  legacy_fidelity.test.js 迁移保真度：官方 CLI 当 oracle，逐步比对 15 个真实站点
+  browser_e2e.js        真 Chrome / Edge 端到端（含设置页真实导入）
   audit_xml_vs_cli.js   用官方 CLI 逐条复判 XML（生成坏数据清单）
   generated_vectors.json 官方二进制的基准向量
   spectre_tests.xml     官方测试套件
+  fixtures/
+    spectre_data.legacy.json  旧版 WebUI 的真数据（含那条 site="1" 的测试垃圾）
+    legacy_oracle.json        上面那份数据的官方 CLI 输出（裁判）
 tools/
   make_icons.js         零依赖 PNG 图标生成器
   lint.js               语法与清单静态检查
@@ -195,7 +250,7 @@ tools/
 - **密码类型 `personal` 不实现**（理由见上「为什么没有 `personal`」）。本扩展支持 `maximum / long / medium / short / basic / pin / name / phrase` 八种。
 - **不做跨设备同步、不导入 `.mpsites` 文件**。收藏/分类只存在本地 `chrome.storage`。
 - 图标是脚本画的，不是设计稿。
-- 只在 Chrome 155（headless）上做过端到端实测；MV3 + 模块 Worker 需要 Chrome 102+。
+- 端到端实测覆盖 Chrome 155 与 Edge 155（均是 Chromium 155）；MV3 + 模块 Worker 需要 Chrome 102+。
 
 ## 许可
 
