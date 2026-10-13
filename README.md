@@ -1,6 +1,6 @@
 # Spectre 密码管理器 · 浏览器扩展
 
-把一台 Windows 桌面上的「密码启动.bat」——背后是一个跑在 WSL 里的 Spectre / Master Password 密码管理器——重做成了一个 Manifest V3 浏览器扩展。
+在 GitHub 上原有的 Spectre 项目基础上做的浏览器端改进版——官方仓库 [spectre-app/cli](https://github.com/spectre-app/cli)，算法参考实现 [spectre-app/api](https://github.com/spectre-app/api)——把它的确定性口令推导算法用纯 JavaScript 重写，做成一个 Manifest V3 浏览器扩展。
 
 主密钥只在内存里，**从不落盘、从不上网**；密码由「主密钥 + 站点名」实时推导，想换密码就换站点名或计数器，不用记、不用同步。
 
@@ -8,11 +8,11 @@
 
 ## 这是什么
 
-原来的东西是一个本地网页：一个 Python 脚本（`server.py`）用 `pexpect` 去驱动 Spectre 官方 CLI 二进制，每生成一次密码就 `rm -rf ~/.spectre.d` 清一次状态，生成的密码吐回网页让你复制。
+原项目是跨平台的命令行 / 桌面实现：算法参考实现用 C 写（GPLv3+，附 Java 绑定），官方 CLI 跑在 Linux / macOS / Windows 上，宿主程序调它拿输出、再自己解析。
 
-这个扩展把中间的 Python 和命令行全扔了——**算法用纯 JavaScript 重写**，直接跑在浏览器里：
+这个扩展把中间的命令行和宿主程序全扔了——**算法用纯 JavaScript 重写**，直接跑在浏览器里：
 
-- 不需要装 Python、不需要 WSL、不需要本地服务进程；
+- 不需要装官方 CLI 二进制、不需要任何 C / Java 运行时、不需要本地服务进程；
 - 不需要联网（扩展本身零网络请求）；
 - 没有「生成完还得去复制粘贴」这一步，可以直接填进当前页面。
 
@@ -94,7 +94,7 @@ node test/verify_vectors.js      # 68 条官方二进制向量
 node test/vectors.test.js        # 官方 XML 测试套件（215 结果 + 240 keyID）
 node test/storage.test.js        # 状态层单测（28 项）
 node test/browser_e2e.js         # 真 Chrome 端到端
-node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需 WSL 里有官方二进制）
+node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需本机有一份官方二进制）
 ```
 
 浏览器端到端那条会用 `--load-extension` 起一个真的 headless Chrome，验证插件被加载、popup 页面渲染、在扩展上下文里跑完 68 条向量、并且真的走一遍 worker 的 `derive → generate`。
@@ -171,7 +171,7 @@ Edge 用的是同一套 `chrome.*` 扩展 API，`chrome.storage` / `chrome.scrip
 选文件或直接把 JSON 粘进文本框，点「导入」。映射规则：
 
 - `template → type`、`user → userName`、`category` 原样
-- 旧版 `server.py` 调 spectre 二进制时**没带 `-a`**，所以那批数据一律按 **v3**、counter 按 **1** 收
+- 旧版调 spectre 二进制时**没带 `-a`**，所以那批数据一律按 **v3**、counter 按 **1** 收
 - 旧版 `categories` 是对象（`{ "默认": [...] }`），也认
 - 未设过姓名时，顺手从导入条目里按众数补一个，省得再打一遍
 - 同站点重复导入是**覆盖**不是副本；判重不分大小写，但**存下来的站点名保留原样**
@@ -179,7 +179,7 @@ Edge 用的是同一套 `chrome.*` 扩展 API，`chrome.storage` / `chrome.scrip
 ### 站点名区分大小写，这条不能马虎
 
 Spectre 的站点名是**区分大小写**的输入：`CTF` 和 `ctf` 推出来是两套完全不同的密码。
-旧版 WebUI 就是把用户手输的原样喂给二进制的，所以迁移时**一个字都不能改**。
+旧版就是把用户手输的原样喂给二进制的，所以迁移时**一个字都不能改**。
 
 `src/storage.js` 因此分成了两个函数：
 
@@ -193,7 +193,7 @@ Spectre 的站点名是**区分大小写**的输入：`CTF` 和 `ctf` 推出来�
 
 - **生成**：填站点名，选密码模板（long / maximum / pin …），点生成，点密码即复制。
 - **填写**：解锁后点「填入当前页」，扩展会把密码写进当前标签页的密码输入框。走的是 `activeTab`，只在用户点击那一刻生效。
-- **收藏 / 分类 / 最近**：与原版网页一致的功能。**收藏里只存站点名、模板、用户名、分类**——没有密码。
+- **收藏 / 分类 / 最近**：站点管理沿用原项目的思路。**收藏里只存站点名、模板、用户名、分类**——没有密码。
 - **右键菜单 / 快捷键**：`Alt+Shift+S` 可直接唤起填写。
 
 ## 隐私
@@ -204,17 +204,17 @@ Spectre 的站点名是**区分大小写**的输入：`CTF` 和 `ctf` 推出来�
 - 「填入当前页」用 `activeTab` + `chrome.scripting`，只在用户点击/快捷键触发时注入，不常驻、不监听页面输入。
 - 内容安全策略：`script-src 'self'; object-src 'none'; base-uri 'none'`。
 
-## 与原版「密码启动.bat」的差别
+## 与原项目的差别
 
-| | 原版 | 本扩展 |
+| | 原项目（[spectre-app/cli](https://github.com/spectre-app/cli) + [spectre-app/api](https://github.com/spectre-app/api)） | 本扩展 |
 |---|---|---|
-| 运行环境 | WSL + Python + Flask + 官方 CLI 二进制 | 浏览器扩展，无外部依赖 |
-| 每次生成 | `rm -rf ~/.spectre.d` 清状态（用的还是真实 `$HOME`） | 无状态纯函数，不存在中间状态 |
-| 数据落盘 | `spectre_data.json`（收藏/分类/最近） | `chrome.storage.local`，**只存站点名/模板/用户名/分类** |
-| 密码来源 | `pexpect` 正则从 CLI 输出里捞 | 直接算出来 |
-| 网络 | 本地 HTTP 服务 | 零请求 |
+| 运行环境 | 需要官方 CLI 二进制，以及调用它的宿主程序 | 浏览器扩展，无外部依赖 |
+| 状态 | CLI 另有一份 `~/.spectre.d` 状态目录，只有 `personal` 类型用得到 | 无状态纯函数，不存在中间状态 |
+| 数据落盘 | 站点/收藏由宿主程序自己的数据文件维护 | `chrome.storage.local`，**只存站点名/模板/用户名/分类** |
+| 密码来源 | 从 CLI 的标准输出里解析出来 | 直接算出来 |
+| 网络 | 取决于宿主程序怎么调 | 零请求 |
 
-那个 `rm -rf ~/.spectre.d` 是原版的一个真问题：它清的是 CLI 的缓存目录，但既然用了真实 `$HOME`，一旦有残留就会污染派生结果——同一个输入可能给你两个不同的密码。这个扩展里**根本不存在中间状态**，所有派生都是无状态的纯函数，所以那个坑自然没了。
+`~/.spectre.d` 只服务于 `personal` 类型（加密你随手编的密码），跟确定性推导本身无关。本扩展干脆不碰磁盘状态：`personal` 类型不实现，所有派生都是无状态的纯函数，**没有需要清理、也不可能残留的东西**。
 
 ## 目录结构
 
@@ -254,4 +254,4 @@ tools/
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE)。算法属于 [Spectre](https://spectre.app) 项目（GPLv3+），本项目是独立的 JavaScript 实现，未包含其代码。
+MIT，见 [LICENSE](LICENSE)。算法属于 [Spectre](https://spectre.app) 项目（原项目仓库 [spectre-app/api](https://github.com/spectre-app/api)，GPLv3+），本项目是独立的 JavaScript 实现，未包含其代码。
