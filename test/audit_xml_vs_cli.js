@@ -12,16 +12,24 @@
 // 原因是经 Windows→wsl.exe 传含 emoji / 引号的参数会被吞掉（踩过），
 // 落盘的脚本是 UTF-8，不受命令行编码影响。
 //
-// 用法: node test/audit_xml_vs_cli.js
-//       node test/audit_xml_vs_cli.js --keep    保留生成的脚本以便查看
+// 用法: SPECTRE_BIN=/path/to/spectre node test/audit_xml_vs_cli.js
+//       SPECTRE_BIN=/path/to/spectre node test/audit_xml_vs_cli.js --keep  保留生成的脚本以便查看
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const BIN = process.env.SPECTRE_BIN || '/home/gxb/spectre-webui/spectre';
+const BIN = process.env.SPECTRE_BIN;
+if (!BIN) {
+  console.error('请先用环境变量 SPECTRE_BIN 指向自己那份官方 spectre CLI 二进制，例如：');
+  console.error('  PowerShell: $env:SPECTRE_BIN = "C:\\path\\to\\spectre"; node test/audit_xml_vs_cli.js');
+  process.exit(2);
+}
 const DIR = import.meta.dirname;
 const WIN_SH = path.join(DIR, '_audit_cases.sh');
+// WSL 里看同一份文件的路径（由脚本自身位置推出来，不写死盘符/目录）
+const WSL_DIR = '/mnt/' + DIR.replace(/^([A-Za-z]):/, (_, d) => d.toLowerCase()).split('\\').join('/');
+const WSL_SH = WSL_DIR + '/_audit_cases.sh';
 const XML = fs.readFileSync(path.join(DIR, 'spectre_tests.xml'), 'utf8');
 
 // ── 解析（含 parent 继承） ─────────────────────────────────────────────────
@@ -114,7 +122,7 @@ let stdout = '';
 try {
   stdout = execFileSync(
     'wsl.exe',
-    ['-d', 'Ubuntu-24.04', '--', 'bash', '/mnt/d/desktop/1/dsh/spectre-plugin/test/_audit_cases.sh'],
+    ['-d', process.env.SPECTRE_WSL_DISTRO || 'Ubuntu-24.04', '--', 'bash', WSL_SH],
     { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: 900000, stdio: ['ignore', 'pipe', 'pipe'] });
 } catch (e) {
   if (e.stdout) stdout = e.stdout;

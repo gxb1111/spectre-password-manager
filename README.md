@@ -95,11 +95,12 @@ node test/vectors.test.js        # 官方 XML 测试套件（215 结果 + 240 ke
 node test/storage.test.js        # 状态层单测（36 项）
 node test/legacy_fidelity.test.js # 旧数据迁移保真（官方 CLI 当 oracle，22 项）
 node test/browser_e2e.js         # 真 Chrome / Edge 端到端（18 项）
-node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需本机有一份官方二进制）
+node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（SPECTRE_BIN 指向你本地那份官方二进制）
 ```
 
 浏览器端到端那条会用 `--load-extension` 起一个真的 headless 浏览器（Chrome / Edge 都行，
-`SPECTRE_CHROME` 指定可执行文件、`SPECTRE_PORT` 换调试端口好并行），验证插件被加载、
+`SPECTRE_CHROME` 指定可执行文件、`SPECTRE_PORT` 换调试端口好并行；不设 `SPECTRE_CHROME`
+时脚本会去常见安装位置自己找 Chrome / Edge），验证插件被加载、
 popup 页面渲染、设置页真的走一遍导入、在扩展上下文里跑完 68 条向量、并且真的走一遍
 worker 的 `derive → generate`。
 
@@ -112,7 +113,7 @@ $env:SPECTRE_PORT = "9344"
 node test/browser_e2e.js
 ```
 
-`SPECTRE_CHROME` 指到哪个浏览器二进制就跑哪个；`SPECTRE_PORT` 用来避开默认的 9333。
+`SPECTRE_CHROME` 指到哪个浏览器二进制就跑哪个（不设就自动探测常见 Chrome / Edge 安装位置）；`SPECTRE_PORT` 用来避开默认的 9333。
 
 ### 踩过的两个坑（留档，免得别人再撞）
 

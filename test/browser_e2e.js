@@ -21,9 +21,20 @@ import path from 'node:path';
 
 const ROOT = path.join(import.meta.dirname, '..');
 
-// 浏览器可换：默认 Chrome for Testing；用 SPECTRE_CHROME 指到 msedge.exe 即可在 Edge 上跑同一套断言。
-const CHROME = process.env.SPECTRE_CHROME
-  || 'C:\\Users\\gxb\\.agent-browser\\browsers\\chrome-155.0.8059.39\\chrome.exe';
+// 浏览器可换：用 SPECTRE_CHROME 指到 chrome.exe / msedge.exe；不设时按常见安装位置自动探测。
+const CHROME = process.env.SPECTRE_CHROME || [
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+].find((p) => fs.existsSync(p));
+if (!CHROME) {
+  console.error('没找到 Chrome / Edge，请用 SPECTRE_CHROME 指向浏览器可执行文件，例如：');
+  console.error('  PowerShell: $env:SPECTRE_CHROME = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"');
+  process.exit(2);
+}
 // 进程名跟着二进制走，否则清理残留时会漏掉 msedge.exe（edge 的渲染进程同样会占据 devtools 端口）。
 const PROC_NAME = /msedge/i.test(CHROME) ? 'msedge.exe' : 'chrome.exe';
 // 端口可配：Chrome 与 Edge 用不同端口就能并行，不怕抢 9333。

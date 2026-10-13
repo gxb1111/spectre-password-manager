@@ -1,5 +1,5 @@
 {
-  "note": "官方 CLI 二进制（/home/gxb/spectre-webui/spectre）对下列站点的输出，用于验证迁移保真度。生成脚本 D:\\desktop\\1\\dsh\\legacy_fidelity_oracle.sh",
+  "note": "官方 CLI 二进制对下列站点的输出，用于验证迁移保真度。",
   "userName": "苏星豪",
   "userSecret": "fidelity-probe-secret",
   "algorithm": 3,

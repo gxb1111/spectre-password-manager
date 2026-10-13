@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 # 用官方 C 参考实现遍历官方 XML 里的全部向量，产出「谁对谁错」真值表。
 # 目的：判断 v0 那一组到底是我们实现的问题，还是 XML 向量本身就与当前 C 库不一致。
+import os
 import re
 import subprocess
 import sys
 
-XML = sys.argv[1] if len(sys.argv) > 1 else r'D:\desktop\1\dsh\spectre-plugin\test\spectre_tests.xml'
-PROBE = '/home/gxb/mpw-probe/spectre_probe'
+XML = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'spectre_tests.xml')
+# 官方 C 参考实现的探测程序：自己编译一份，用环境变量指过来
+PROBE = os.environ.get('SPECTRE_PROBE')
+if not PROBE:
+    sys.exit('请先用环境变量 SPECTRE_PROBE 指向官方 C 参考实现的探测程序，例如：'
+             'SPECTRE_PROBE=/path/to/spectre_probe python3 test/truth_table.py')
 
 TYPE_MAP = {
     'long': 'long', 'maximum': 'maximum', 'medium': 'medium', 'short': 'short',

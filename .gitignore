@@ -10,6 +10,10 @@ npm-debug.log*
 yarn-error.log*
 package-lock.json
 
+# Python 缓存（truth_table.py 等）
+__pycache__/
+*.pyc
+
 # 打包产物
 *.crx
 *.pem
