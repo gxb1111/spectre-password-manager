@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Spectre 密码管理器",
+  "short_name": "Spectre",
+  "version": "1.0.0",
+  "description": "基于 Spectre / Master Password 算法的确定性密码管理器：主密钥永不落盘，密码随站点实时推导。",
+  "default_locale": "zh_CN",
+  "minimum_chrome_version": "102",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Spectre 密码管理器",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "commands": {
+    "fill-password": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "为当前页面填入推导出的密码"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
+  },
+  "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDrx4h7ULKg4vx4gHEhri2UhJTPiNNeLev2MubIN2mqrGN7e6TyHO3o9Gxjd/RrFuQjUn9sMMsJDOAKG5WtLBwy8RWbYTaBPkQiw+huopBm8H2UM3nJ8ewamWNado1SRZJRPkKjWRYU+r2d996vsVEpqJq1Cy5ooYqYmbKTK8ieFQIDAQAB"
+}

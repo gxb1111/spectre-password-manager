@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Spectre 测试登录页</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 60px auto; padding: 0 20px; }
+    label { display: block; margin: 14px 0 4px; font-size: 13px; color: #444; }
+    input { width: 100%; padding: 9px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; }
+    button { margin-top: 18px; padding: 10px 16px; font-size: 14px; cursor: pointer; }
+    #out { margin-top: 16px; font-family: ui-monospace, monospace; font-size: 12px; color: #2a7; }
+  </style>
+</head>
+<body>
+  <h1>登录测试页</h1>
+  <form id="login" onsubmit="return false">
+    <label for="user">账号</label>
+    <input id="user" name="user" type="text" autocomplete="username" placeholder="user@example.com">
+
+    <label for="pass">密码</label>
+    <input id="pass" name="password" type="password" autocomplete="current-password" placeholder="password">
+
+    <label for="hidden-pass">另一个密码框（用于测试只填第一个）</label>
+    <input id="hidden-pass" name="password2" type="password">
+
+    <button type="submit">登录</button>
+  </form>
+  <div id="out"></div>
+  <script>
+    // 供自动化断言：记录每次 input/change，便于确认插件是「真的填进去」而不是改了 DOM 属性
+    window.__events = [];
+    document.addEventListener('input', function (e) {
+      window.__events.push({ type: 'input', id: e.target.id, len: (e.target.value || '').length });
+      document.getElementById('out').textContent =
+        'input 事件: #' + e.target.id + ' 长度 ' + e.target.value.length;
+    });
+    document.addEventListener('change', function (e) {
+      window.__events.push({ type: 'change', id: e.target.id, len: (e.target.value || '').length });
+    });
+  </script>
+</body>
+</html>

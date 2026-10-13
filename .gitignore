@@ -1,0 +1,31 @@
+# 临时批次脚本（audit_xml_vs_cli.js 生成，正常情况下会自动删掉）
+test/_audit_cases.sh
+
+# 官方 CLI 复判产出的坏数据清单（每次跑 audit 都会重算）
+test/xml_bad_vectors.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+
+# 打包产物
+*.crx
+*.pem
+*.zip
+dist/
+build/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 各平台回收站与自动备份
+*~
+*.bak
+*.tmp
+*.swp

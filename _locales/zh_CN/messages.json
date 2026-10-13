@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "Spectre 密码管理器",
+    "description": "扩展名称"
+  },
+  "extShortName": {
+    "message": "Spectre"
+  },
+  "extDescription": {
+    "message": "基于 Spectre / Master Password 算法的确定性密码管理器：主密钥永不落盘，密码随站点实时推导。"
+  },
+  "actionTitle": {
+    "message": "Spectre 密码管理器"
+  },
+  "fillPassword": {
+    "message": "为当前页面填入推导出的密码"
+  }
+}

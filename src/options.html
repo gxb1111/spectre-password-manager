@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spectre 密码管理器 · 设置</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body class="options">
+  <div class="wrap">
+    <header class="op-head">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <h1>Spectre 密码管理器</h1>
+      </div>
+      <span class="op-version" id="op-version"></span>
+    </header>
+
+    <p class="lead">
+      这份插件是桌面版 Spectre WebUI 的浏览器移植：算法与官方 C 实现逐字节一致
+      （官方测试套件 60/60 通过，另与官方 CLI 二进制对照 68/68 一致）。
+      主密钥<b>只存在于内存</b>，从不写入任何存储。
+    </p>
+
+    <section class="card">
+      <h2>默认参数</h2>
+      <div class="grid">
+        <label class="field">
+          <span class="label">默认模板</span>
+          <select id="op-type"></select>
+        </label>
+        <label class="field">
+          <span class="label">算法版本</span>
+          <select id="op-algorithm">
+            <option value="3">v3（2015，推荐）</option>
+            <option value="2">v2（2014）</option>
+            <option value="1">v1（2012）</option>
+            <option value="0">v0（最老）</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">记住姓名（本机）</span>
+          <input id="op-user" type="text" autocomplete="off" placeholder="你的名字">
+        </label>
+      </div>
+      <p class="note">
+        「记住姓名」只是把姓名存进 <code>chrome.storage.local</code>，方便下次少打几个字。
+        <b>主密钥不会以任何形式保存。</b>
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>分类管理</h2>
+      <div class="cat-add">
+        <input id="op-new-cat" type="text" placeholder="新分类名">
+        <button id="op-add-cat" class="primary small">添加</button>
+      </div>
+      <ul id="op-cat-list" class="cat-list"></ul>
+      <p class="note">删除分类不会删掉收藏，里面的条目会退回「未分类」。</p>
+    </section>
+
+    <section class="card">
+      <h2>收藏（<span id="op-fav-count">0</span>）</h2>
+      <ul id="op-fav-list" class="fav-list"></ul>
+      <div class="row-end">
+        <button id="op-export" class="ghost small">导出 JSON</button>
+        <button id="op-clear-recent" class="ghost small">清空最近</button>
+        <button id="op-reset" class="ghost small danger">清空全部数据</button>
+      </div>
+      <p class="note">
+        导出的 JSON 只有站点名、模板、用户名、计数器、分类 —— <b>不含任何密码</b>，
+        因为密码本来就不在插件里存着。
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>验证</h2>
+      <p class="note">
+        对照官方测试向量的自检可以直接在本机跑：
+      </p>
+      <pre class="code">node test/verify_vectors.js    # 与官方 CLI 二进制对照
+node tests/run_vectors.js      # 官方 XML 测试套件
+node test/storage.test.js      # 状态层单测</pre>
+      <p class="note">
+        经典自检样例：姓名 <code>Robert Lee Mitchell</code>、主密钥
+        <code>banana colored duckling</code>、站点 <code>masterpasswordapp.com</code>、
+        v0、long → <code>Feji5@ReduWosh</code>；同输入换 v3 → <code>PozoLalv0_Yelo</code>。
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>关于与隐私</h2>
+      <p class="note">
+        本插件不联网。没有分析、没有遥测、没有任何外部请求；
+        唯一的网络能力是 <code>activeTab</code> —— 只在你点「填入当前页」时生效。
+      </p>
+      <p class="note">
+        算法出处：<code>com.lyndir.masterpassword</code>（Spectre / Master Password，Maarten Billemont）。
+        本插件是独立实现，与上游无隶属关系。
+      </p>
+    </section>
+
+    <footer class="op-foot">
+      <span id="op-status" class="status"></span>
+    </footer>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

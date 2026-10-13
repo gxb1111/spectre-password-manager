@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spectre 密码管理器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <h1>Spectre</h1>
+      </div>
+      <div class="top-actions">
+        <button id="btn-lock" class="icon-btn" title="锁定（清除内存中的主密钥）" hidden>锁定</button>
+        <button id="btn-options" class="icon-btn" title="设置">设置</button>
+      </div>
+    </header>
+
+    <!-- ============================ 解锁 ============================ -->
+    <section id="view-unlock" class="view">
+      <p class="hint">
+        主密钥只在本地内存中用于推导，<b>不会上传、不会落盘</b>。
+        只要「姓名 + 主密钥 + 站点名 + 模板」一致，任何设备都能算出同一个密码。
+      </p>
+
+      <label class="field">
+        <span class="label">姓名</span>
+        <input id="in-user" type="text" autocomplete="off" spellcheck="false" placeholder="你的名字">
+      </label>
+
+      <label class="field">
+        <span class="label">主密钥</span>
+        <span class="secret-wrap">
+          <input id="in-secret" type="password" autocomplete="off" spellcheck="false" placeholder="主密码">
+          <button id="btn-eye" class="eye" type="button" title="显示 / 隐藏" aria-pressed="false">show</button>
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="label">算法版本</span>
+        <select id="in-algorithm-unlock">
+          <option value="3" selected>v3（2015，推荐）</option>
+          <option value="2">v2（2014）</option>
+          <option value="1">v1（2012）</option>
+          <option value="0">v0（最老）</option>
+        </select>
+      </label>
+
+      <label class="row-check">
+        <input id="in-remember" type="checkbox">
+        <span>在本机记住姓名（<b>不会</b>记住主密钥）</span>
+      </label>
+
+      <div id="unlock-error" class="error" hidden></div>
+
+      <button id="btn-unlock" class="primary">解锁</button>
+      <div class="progress" id="unlock-progress" hidden><span class="bar"></span></div>
+      <p class="foot-note">scrypt N=32768 · r=8 · p=2 · dkLen=64（约 0.5–2 秒，在 worker 里跑，不卡界面）</p>
+    </section>
+
+    <!-- ============================ 生成 ============================ -->
+    <section id="view-main" class="view" hidden>
+      <div class="keyline">
+        <span class="tag" id="tag-user">—</span>
+        <span class="tag" id="tag-alg">v3</span>
+        <span class="idmono" id="tag-keyid" title="userKey 指纹（SHA-256）"></span>
+      </div>
+
+      <label class="field">
+        <span class="label">站点</span>
+        <span class="secret-wrap">
+          <input id="in-site" type="text" autocomplete="off" spellcheck="false" placeholder="github.com">
+          <button id="btn-site" class="eye" type="button" title="用当前标签页的域名">当前页</button>
+        </span>
+      </label>
+
+      <div class="two">
+        <label class="field">
+          <span class="label">模板</span>
+          <select id="in-type"></select>
+        </label>
+        <label class="field">
+          <span class="label">计数器</span>
+          <span class="counter">
+            <button id="btn-counter-down" type="button" title="减一">−</button>
+            <input id="in-counter" type="text" inputmode="numeric" value="1">
+            <button id="btn-counter-up" type="button" title="加一">+</button>
+          </span>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="label">用途</span>
+        <select id="in-purpose">
+          <option value="authentication" selected>登录密码</option>
+          <option value="identification">用户名 / 账号</option>
+          <option value="recovery">密保答案</option>
+        </select>
+      </label>
+
+      <label class="field" id="field-context" hidden>
+        <span class="label">上下文（密保问题原文）</span>
+        <input id="in-context" type="text" autocomplete="off" spellcheck="false" placeholder="例如：你母亲的名字">
+      </label>
+
+      <div id="gen-error" class="error" hidden></div>
+
+      <div class="result" id="result" hidden>
+        <div class="result-head">
+          <span class="result-label">密码</span>
+          <span class="result-meta" id="result-meta"></span>
+        </div>
+        <output id="out-password" class="password" tabindex="0"></output>
+        <div class="result-actions">
+          <button id="btn-copy" class="primary small">复制</button>
+          <button id="btn-fill" class="ghost small">填入当前页</button>
+          <button id="btn-fav" class="ghost small">收藏</button>
+          <button id="btn-regen" class="ghost small" title="换一个计数器版本">换一个</button>
+        </div>
+      </div>
+
+      <button id="btn-generate" class="primary">生成密码</button>
+
+      <!-- 收藏 / 最近 -->
+      <div class="panels">
+        <div class="panel-head">
+          <button class="tab active" data-tab="favorites">收藏</button>
+          <button class="tab" data-tab="recent">最近</button>
+          <button id="btn-manage" class="mini">管理</button>
+        </div>
+
+        <div id="tab-favorites" class="tab-body">
+          <div id="cat-tabs" class="cat-tabs"></div>
+          <ul id="fav-list" class="site-list"></ul>
+          <p id="fav-empty" class="empty" hidden>还没有收藏的站点。</p>
+        </div>
+
+        <div id="tab-recent" class="tab-body" hidden>
+          <ul id="recent-list" class="site-list"></ul>
+          <p id="recent-empty" class="empty" hidden>还没有使用记录。</p>
+          <button id="btn-clear-recent" class="mini danger">清空最近</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bottom">
+      <span id="status" class="status"></span>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

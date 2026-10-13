@@ -1,0 +1,146 @@
+[
+  {
+    "id": "v3_type_personal",
+    "algorithm": 3,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v3_type_personal_mb",
+    "algorithm": 3,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal",
+    "algorithm": 2,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal_mb",
+    "algorithm": 2,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal",
+    "algorithm": 1,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal_mb",
+    "algorithm": 1,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal",
+    "algorithm": 0,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal_mb",
+    "algorithm": 0,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v3_type_personal_flat",
+    "algorithm": 3,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v3_type_personal_mb_flat",
+    "algorithm": 3,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal_flat",
+    "algorithm": 2,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal_mb_flat",
+    "algorithm": 2,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal_flat",
+    "algorithm": 1,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal_mb_flat",
+    "algorithm": 1,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal_flat",
+    "algorithm": 0,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal_mb_flat",
+    "algorithm": 0,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v3_type_personal_json",
+    "algorithm": 3,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v3_type_personal_mb_json",
+    "algorithm": 3,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal_json",
+    "algorithm": 2,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v2_type_personal_mb_json",
+    "algorithm": 2,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal_json",
+    "algorithm": 1,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v1_type_personal_mb_json",
+    "algorithm": 1,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal_json",
+    "algorithm": 0,
+    "xml": "password",
+    "cli": "__MISSING__"
+  },
+  {
+    "id": "v0_type_personal_mb_json",
+    "algorithm": 0,
+    "xml": "⛄",
+    "cli": "__MISSING__"
+  }
+]
