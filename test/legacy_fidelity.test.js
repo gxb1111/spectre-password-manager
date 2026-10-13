@@ -1,10 +1,10 @@
 /**
  * legacy_fidelity.test.js —— 迁移保真度回归测试
  *
- * 回答一个具体问题：把旧版桌面 WebUI 的收藏搬进这个插件之后，
+ * 回答一个具体问题：把旧版的收藏搬进这个扩展之后，
  * **同一个姓名 + 同一个主密钥，插件推出的密码和旧版一致吗？**
  *
- * 裁判是官方 CLI 二进制本身（`/home/gxb/spectre-webui/spectre`）：
+ * 裁判是官方 CLI 二进制本身：
  * test/fixtures/legacy_oracle.json 里那些密码就是它跑出来的，不是我们编的。
  * 生成脚本：D:\desktop\1\dsh\legacy_fidelity_oracle.sh
  *

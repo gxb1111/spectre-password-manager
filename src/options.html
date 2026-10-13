@@ -18,8 +18,8 @@
     </header>
 
     <p class="lead">
-      这份插件是桌面版 Spectre WebUI 的浏览器移植：算法与官方 C 实现逐字节一致
-      （官方测试套件 60/60 通过，另与官方 CLI 二进制对照 68/68 一致）。
+      这份扩展把 Spectre 项目（<a href="https://github.com/spectre-app/cli" target="_blank" rel="noreferrer">spectre-app/cli</a>）的算法做成了浏览器原生实现，与官方 C 参考实现逐字节一致
+      （官方测试套件 215/215 结果 + 240/240 keyID 通过，另与官方 CLI 二进制对照 68/68 一致）。
       主密钥<b>只存在于内存</b>，从不写入任何存储。
     </p>
 
@@ -77,7 +77,7 @@
     <section class="card">
       <h2>导入 / 迁移</h2>
       <p class="note">
-        两种格式都认：本插件的<b>导出 JSON</b>，以及旧版桌面 WebUI 的
+        两种格式都认：本插件的<b>导出 JSON</b>，以及旧版的数据文件
         <code>spectre_data.json</code>（<code>{ "favorites":[{ "site","template","category","user" }] }</code>）。
       </p>
       <div class="imp-row">
@@ -92,7 +92,7 @@
       <p class="note">
         站点名<b>原样保留</b>：Spectre 区分大小写，<code>CTF</code> 和 <code>ctf</code> 推出来是两套密码。
         同一站点重复导入会覆盖而不是产生副本；旧版数据的 counter 一律按 1、算法按 v3 收
-        （旧版 server.py 调二进制时没带 <code>-a</code>）。
+        （旧版调二进制时没带 <code>-a</code>）。
       </p>
     </section>
 

@@ -33,7 +33,7 @@ const HEADED = process.argv.indexOf('--headed') !== -1;
 // JSON 用 fs 读，不用 `import ... from '*.json'`（在 ESM 里需要 import attributes，Node 24 会直接语法报错）
 const VECTORS = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'generated_vectors.json'), 'utf8'));
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'manifest.json'), 'utf8'));
-// 旧版桌面 WebUI 的真数据（含那条 site="1" 的测试垃圾）：第 5 步拿它走一遍真实导入
+// 旧版的真数据（含那条 site="1" 的测试垃圾）：第 5 步拿它走一遍真实导入
 const LEGACY = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'fixtures', 'spectre_data.legacy.json'), 'utf8'));
 
 /**

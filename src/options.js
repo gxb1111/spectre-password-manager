@@ -203,7 +203,7 @@ function bind() {
     try {
       const res = Store.importMetadata(state, payload);
       const s = res.stats;
-      const src = s.source === 'legacy-webui' ? '旧版 WebUI' : '插件导出';
+      const src = s.source === 'legacy-webui' ? '旧版数据' : '插件导出';
       await persist(res.state, '');
       $('op-import-text').value = '';
       $('op-import-file').value = '';

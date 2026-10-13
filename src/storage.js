@@ -1,11 +1,11 @@
 /**
  * storage.js —— 插件的状态层（纯逻辑，不碰密码）
  *
- * 设计要点（也是原版 server.py 的坑的修正）：
+ * 设计要点：
  *   1. 这里**只存站点名 / 模板 / 用户名 / 计数器 / 分类**，任何跟密码或主密钥有关的
- *      字节都不落盘 —— 原版 WebUI 的数据文件就是这个形状，保持一致。
- *   2. 原版 server.py 每次生成都 `rm -rf ~/.spectre.d` 去清状态，却又用真实 HOME，
- *      残留在别处；这个插件根本不存在中间状态，所有派生都是无状态纯函数。
+ *      字节都不落盘 —— 与旧版数据文件同形状，方便迁移。
+ *   2. 派生全部是无状态纯函数：官方 CLI 那套 `~/.spectre.d` 状态目录在这里压根不存在，
+ *      没有需要清理、也不可能残留的东西。
  *   3. 内存兜底：Node 下跑测试时没有 chrome.storage，用一个 Map 顶上。
  */
 
@@ -55,7 +55,7 @@ const MULTI_PART_SUFFIX = new Set([
  * 这是**唯一**决定密码的站点名来源，所以它必须稳定、可复现、可手改。
  *
  * 注意：**保留大小写**。Spectre 的站点名是区分大小写的输入 ——
- * `CTF` 和 `ctf` 推导出来是两套完全不同的密码，旧版 WebUI 就是把用户
+ * `CTF` 和 `ctf` 推导出来是两套完全不同的密码，旧版就是把用户
  * 手输的原样喂给 spectre 二进制。只有 URL 里的 host 天生小写（URL 规范使然）。
  * 「是不是同一个站点」这类判断请用 siteLookupKey()，绝不要在这里折叠大小写。
  */
@@ -277,7 +277,7 @@ function coerceEntry(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const site = normalizeSite(raw.site || raw.siteName || raw.name || '');
   if (!site) return null;
-  // 旧版 WebUI 用 template / user，本插件用 type / userName
+  // 旧版用 template / user，本插件用 type / userName
   let type = String(raw.type || raw.template || 'long').trim().toLowerCase();
   if (KNOWN_TYPES.indexOf(type) === -1) type = 'long';
   const counter = Math.max(1, parseInt(raw.counter, 10) || 1);
@@ -297,11 +297,11 @@ function coerceEntry(raw) {
 /**
  * 解析导入载荷，两种格式都吃：
  *   A) 本插件「导出 JSON」：{ favorites:[{site,userName,type,counter,algorithm,category}], categories:[…] }
- *   B) 旧版桌面 WebUI 的 spectre_data.json：
+ *   B) 旧版的 spectre_data.json：
  *      { favorites:[{site,template,category,user}], categories:{ "默认":[…] }, recent:[…] }
  * 识别旧版的两个特征：categories 是**对象**、条目上用 template/user 而不是 type/userName。
  *
- * 旧版 server.py 调 spectre 时没带 -a，所以那批数据一律是 v3、counter 恒为 1；
+ * 旧版调 spectre 时没带 -a，所以那批数据一律是 v3、counter 恒为 1；
  * 但如果有条目显式带了 algorithm/counter，这里也照收。
  */
 function parseImport(payload) {

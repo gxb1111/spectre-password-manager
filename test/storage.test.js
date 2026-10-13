@@ -211,7 +211,7 @@ test('settings 与默认值合并', () => {
 });
 
 console.log('\n== 导入 / 迁移 ==');
-test('旧版 webui 格式：template/user/categories 对象都认', () => {
+test('旧版格式：template/user/categories 对象都认', () => {
   const legacy = {
     favorites: [
       { site: 'AI安全', template: 'long', category: '默认', user: '苏星豪' },

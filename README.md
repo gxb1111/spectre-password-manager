@@ -92,12 +92,16 @@ keyID 向量: 240 通过 / 0 失败  (共 240)
 ```bash
 node test/verify_vectors.js      # 68 条官方二进制向量
 node test/vectors.test.js        # 官方 XML 测试套件（215 结果 + 240 keyID）
-node test/storage.test.js        # 状态层单测（28 项）
-node test/browser_e2e.js         # 真 Chrome 端到端
+node test/storage.test.js        # 状态层单测（36 项）
+node test/legacy_fidelity.test.js # 旧数据迁移保真（官方 CLI 当 oracle，22 项）
+node test/browser_e2e.js         # 真 Chrome / Edge 端到端（18 项）
 node test/audit_xml_vs_cli.js    # 用官方 CLI 复判 XML 每一条（需本机有一份官方二进制）
 ```
 
-浏览器端到端那条会用 `--load-extension` 起一个真的 headless Chrome，验证插件被加载、popup 页面渲染、在扩展上下文里跑完 68 条向量、并且真的走一遍 worker 的 `derive → generate`。
+浏览器端到端那条会用 `--load-extension` 起一个真的 headless 浏览器（Chrome / Edge 都行，
+`SPECTRE_CHROME` 指定可执行文件、`SPECTRE_PORT` 换调试端口好并行），验证插件被加载、
+popup 页面渲染、设置页真的走一遍导入、在扩展上下文里跑完 68 条向量、并且真的走一遍
+worker 的 `derive → generate`。
 
 同一套断言可以直接换浏览器跑（脚本内不依赖 Chrome 专有行为）：
 
@@ -159,13 +163,13 @@ Edge 用的是同一套 `chrome.*` 扩展 API，`chrome.storage` / `chrome.scrip
 > 别拿 `PozoLalv0_Yelo` 当基准。那是官方 README 里的示例占位值，本机官方 CLI 二进制的 4 个版本 × 8 种类型全都复现不出它——它不是任何真实输入组合的输出，所以核对时以官方二进制复算出来的上表为准。
 
 
-## 从旧版 WebUI 迁移收藏
+## 从旧版迁移收藏
 
 设置页有「导入 / 迁移」区，两种格式都认：
 
 | 格式 | 长相 |
 |---|---|
-| 旧版桌面 WebUI 的 `spectre_data.json` | `{ "favorites":[{ "site","template","category","user" }] }` |
+| 旧版的 `spectre_data.json` | `{ "favorites":[{ "site","template","category","user" }] }` |
 | 本插件的「导出 JSON」 | `{ "favorites":[{ "site","userName","type","counter","algorithm","category" }] }` |
 
 选文件或直接把 JSON 粘进文本框，点「导入」。映射规则：
@@ -237,7 +241,7 @@ test/
   generated_vectors.json 官方二进制的基准向量
   spectre_tests.xml     官方测试套件
   fixtures/
-    spectre_data.legacy.json  旧版 WebUI 的真数据（含那条 site="1" 的测试垃圾）
+    spectre_data.legacy.json  旧版的真数据（含那条 site="1" 的测试垃圾）
     legacy_oracle.json        上面那份数据的官方 CLI 输出（裁判）
 tools/
   make_icons.js         零依赖 PNG 图标生成器
